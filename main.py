@@ -17,6 +17,21 @@ bg_rect = bg_surface.get_rect(midbottom = (screen_width/2, screen_height))
 scroll = 0
 tiles = math.ceil(screen_width /bg_surface.get_width()) + 1
 
+def draw_health_bar(screen, x, y, health_pct):
+    # Set the dimensions and color of the health bar
+    bar_width = 75
+    bar_height = 7
+    border_color = (255, 255, 255)  # white
+    health_color = (255, 0, 0)  # red
+
+    # Calculate the width of the health bar based on the health percentage
+    health_width = int(bar_width * health_pct)
+
+    # Draw the border of the health bar
+    pygame.draw.rect(screen, border_color, (x, y, bar_width, bar_height))
+    # Draw the health bar
+    pygame.draw.rect(screen, health_color, (x, y, health_width, bar_height))
+
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Metal Slug")
 
@@ -27,14 +42,14 @@ npcs = pygame.sprite.Group()
 class Solider(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        player_walk_right = [pygame.image.load('graphics/player/player_walk_right_1.png').convert_alpha(), pygame.image.load('graphics/player/player_walk_right_2.png').convert_alpha()]
-        player_walk_left = [pygame.image.load('graphics/player/player_walk_left_1.png').convert_alpha(), pygame.image.load('graphics/player/player_walk_left_2.png').convert_alpha()]
-        self.player_walk = [player_walk_right,player_walk_left]
-        player_jump_right = pygame.image.load('graphics/player/jump_right.png')
-        player_jump_left = pygame.image.load('graphics/player/jump_left.png')
-        self.player_jump = [player_jump_right, player_jump_left]
+        self.player_walk = [pygame.image.load('graphics/player/player_walk_right_1.png').convert_alpha(), pygame.image.load('graphics/player/player_walk_right_2.png').convert_alpha()]
+        # player_walk_left = [pygame.image.load('graphics/player/player_walk_left_1.png').convert_alpha(), pygame.image.load('graphics/player/player_walk_left_2.png').convert_alpha()]
+        # self.player_walk = [player_walk_right,player_walk_left]
+        self.player_jump = pygame.image.load('graphics/player/jump_right.png')
+        # player_jump_left = pygame.image.load('graphics/player/jump_left.png')
+        # self.player_jump = [player_jump_right, player_jump_left]
         self.player_index = 0
-        self.image = self.player_walk[0][self.player_index]
+        self.image = self.player_walk[self.player_index]
         self.rect = self.image.get_rect(midbottom = (x,y))
         self.gravity = 0
         self.in_air = False
@@ -125,17 +140,27 @@ class Solider(pygame.sprite.Sprite):
 
     def draw(self, screen):
         screen.blit(self.image, self.rect.topleft)
-        # if self.facing_left:
-        screen.blit(self.weapon.image, self.weapon.rect.topleft)
+        if not self.facing_left:
+            self.weapon.rect.center = self.rect.midright
+            screen.blit(self.weapon.image, self.weapon.rect.topleft)
+        else:
+            self.weapon.rect.center = self.rect.midleft
+            screen.blit(pygame.transform.flip(self.weapon.image, True, False), self.weapon.rect.topleft)
 
     def update(self):
         self.player_input()
         self.weapon.update()
         self.move()
         if self.in_air:
-            self.image = self.player_jump[int(self.facing_left)]
+            if self.facing_left:
+                self.image = pygame.transform.flip(self.player_jump, True, False)
+            else:
+                self.image = self.player_jump
         else:
-            self.image = self.player_walk[int(self.facing_left)][int(self.player_index)]
+            if self.facing_left:
+                self.image = pygame.transform.flip(self.player_walk[int(self.player_index)], True, False)
+            else:
+                self.image = self.player_walk[int(self.player_index)]
         # self.weapon.shoot()
         self.get_hit()
         self.death()
@@ -179,7 +204,7 @@ class Weapon(pygame.sprite.Sprite):
             self.shoot_cooldown = 20 if self.type == 0 else 8
         if self.shoot_cooldown>0:
             self.shoot_cooldown-=1
-
+            
 class Decoration(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -302,6 +327,9 @@ while True:
 
     for play in player:
         play.draw(screen)
+        draw_health_bar(screen, play.rect.x, play.rect.y - 12, play.health/1000)
+    for npc in npcs:
+        draw_health_bar(screen, npc.rect.x, npc.rect.y - 12, npc.health/100)
     player.update()
     bullets_player.draw(screen)
     bullets_player.update()
