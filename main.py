@@ -325,11 +325,13 @@ while True:
     if abs(scroll) >bg_surface.get_width():
         scroll = 0
 
+    for npc in npcs:
+        draw_health_bar(screen, npc.rect.x, npc.rect.y - 12, npc.health/100)
+
     for play in player:
         play.draw(screen)
         draw_health_bar(screen, play.rect.x, play.rect.y - 12, play.health/1000)
-    for npc in npcs:
-        draw_health_bar(screen, npc.rect.x, npc.rect.y - 12, npc.health/100)
+        
     player.update()
     bullets_player.draw(screen)
     bullets_player.update()
